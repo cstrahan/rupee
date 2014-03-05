@@ -133,7 +133,7 @@ rbCall obj method argv mblk =
             let blk = if isJust mblk then fromJust mblk else rbNil
             with (Dispatch obj mid (fromIntegral . length $ argv) ary blk) $ \dispatch ->
                 alloca $ \state -> do
-                    result <- rb_funcall2 dispatch state pinningArray
+                    result <- rupee_funcall dispatch state pinningArray
                     didFail <- (/= 0) <$> peek state 
                     when didFail $ do
                         exception <- rb_errinfo
@@ -185,7 +185,7 @@ foreign import ccall safe "rb_errinfo"                     rb_errinfo           
 foreign import ccall safe "intern.h rb_ary_entry"          rb_ary_entry                    :: RValue -> CLong -> IO RValue
 foreign import ccall safe "rupee_rb_ary_len"               rb_ary_len                      :: RValue -> IO CUInt
 foreign import ccall safe "rupee_rb2cstr"                  rb2cstr                         :: RValue -> IO CString
-foreign import ccall safe "rupee_rb_funcall2"              rb_funcall2                     :: Ptr Dispatch -> Ptr CInt -> RValue -> IO RValue
+foreign import ccall safe "rupee_funcall"                  rupee_funcall                   :: Ptr Dispatch -> Ptr CInt -> RValue -> IO RValue
 foreign import ccall safe "rupee_rb_type"                  rb_type                         :: RValue -> IO CChar
 foreign import ccall safe "rupee_rb_str_len"               rb_str_len                      :: RValue -> IO CLong
 foreign import ccall safe "rb_str_new"                     rb_str_new                      :: CString -> CLong -> IO RValue
@@ -195,9 +195,10 @@ foreign import ccall safe "rupee_rb_get_singleton"         rb_get_singleton     
 foreign import ccall safe "rupee_init"                     rupee_init                      :: (FunPtr (FunPtr a -> IO ())) -> IO ()
 foreign import ccall safe "rupee_rb_str_to_symbol"         rb_str_to_symbol                :: CString -> CLong -> IO RValue
 
-foreign import ccall      "&rupee_proc_constructor"        rupee_proc_constructor          :: Ptr RValue
-
 foreign import ccall safe "wrapper"                        mkCallback                      :: (HSCallback) -> IO (FunPtr (HSCallback))
+
+foreign import ccall safe "&rupee_proc_constructor"        rupee_proc_constructor          :: Ptr RValue
+foreign import ccall safe "&hs_free_fun_ptr"               hs_free_fun_ptr                 :: FunPtr (FunPtr a -> IO ())
 
 {- VALUE rb_define_class(const char*,VALUE); -}
 {- VALUE rb_define_module(const char*); -}
@@ -211,4 +212,3 @@ foreign import ccall safe "wrapper"                        mkCallback           
 {- void rb_extend_object(VALUE,VALUE); -}
 {- void rb_prepend_module(VALUE,VALUE); -}
 
-foreign import ccall safe "&" hs_free_fun_ptr   :: FunPtr (FunPtr a -> IO ())

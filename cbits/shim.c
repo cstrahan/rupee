@@ -14,6 +14,8 @@
 
 FunPtrFn freeFunPtrFn = NULL;
 VALUE rupee_proc_constructor = Qnil;
+ID rupee_id = NULL;
+ID rupee_gc_id = NULL;
 
 VALUE rupee_new_float(double d) {
 #ifdef RUBY2
@@ -95,6 +97,9 @@ void rupee_init(HsFunPtr ptr) {
   rupee_proc_constructor = rb_eval_string_protect(
       "Proc.new {|callable| Proc.new {|*args,&blk| callable.call(self, *args, &blk) } }",
       &status);
+
+  rupee_id    = rb_intern("__rupee__");
+  rupee_gc_id = rb_intern("__rupee__gc");
 }
 
 // just for debugging...
@@ -103,7 +108,7 @@ void print_object(VALUE obj) {
   rb_funcall2(rb_mKernel, rb_intern("puts"), 1, &obj);
 }
 
-VALUE rupee_rb_funcall2_protected(struct s_dispatch* dispatch) {
+VALUE rupee_funcall_protected(struct s_dispatch* dispatch) {
   VALUE result;
 
   // TODO: check blk;
@@ -127,10 +132,10 @@ VALUE rupee_rb_funcall2_protected(struct s_dispatch* dispatch) {
 }
 
 // this allows us to safely call Ruby methods.
-// we use rb_protect to prevent problems around stack unwinding in the presense
+// we use rb_protect to prevent problems around stack unwinding in the presence
 // of throw/raise.
-VALUE rupee_rb_funcall2(struct s_dispatch* dispatch, int* state, VALUE pinning_ary) {
-  VALUE result = rb_protect(&rupee_rb_funcall2_protected, dispatch, state);
+VALUE rupee_funcall(struct s_dispatch* dispatch, int* state, VALUE pinning_ary) {
+  VALUE result = rb_protect(&rupee_funcall_protected, dispatch, state);
   if (RTEST(pinning_ary)) { 
     rb_ary_push(pinning_ary, result);
   }
@@ -139,7 +144,7 @@ VALUE rupee_rb_funcall2(struct s_dispatch* dispatch, int* state, VALUE pinning_a
 
 // all ruby methods will use this as their definition.
 // this indirection allows us to raise (or re-raise) Ruby exceptions here,
-// which is something we couldn't safely do from Haskell.
+// which is something we couldn't do from Haskell.
 // (Ruby's exception mechanism uses setjmp/lngjmp)
 VALUE rupee_haskell_method_invoke(int argc, VALUE *argv, VALUE obj) {
   hs_method fun = (hs_method)rupee_method_data();
@@ -173,19 +178,19 @@ void rupee_define_method(VALUE klass, const char *name, VALUE (*func)(), int arg
   ID id = rb_intern(name);
   VALUE store;
 
-  // keep the Haskell function in a table attached to the target class
-  store = rb_attr_get(klass, rb_intern("__rupee__"));
+  // keep the actual Haskell function in a table attached to the target class
+  store = rb_attr_get(klass, rupee_id);
   if (store == Qnil) {
     store = rb_obj_alloc(rb_cObject);
-    rb_ivar_set(klass, rb_intern("__rupee__"), store);
+    rb_ivar_set(klass, rupee_id, store);
   }
   rb_ivar_set(store, id, func);
 
   // attach a finalizer; if the class is GC'd, we should free the FunPtr
-  store = rb_attr_get(klass, rb_intern("__rupee__gc"));
+  store = rb_attr_get(klass, rupee_gc_id);
   if (store == Qnil) {
     store = rb_obj_alloc(rb_cObject);
-    rb_ivar_set(klass, rb_intern("__rupee__gc"), store);
+    rb_ivar_set(klass, rupee_gc_id, store);
   }
   rb_ivar_set(store, id, create_funptr_finalizer(func));
 
@@ -204,6 +209,6 @@ VALUE rupee_method_data() {
     klass = rb_class_of(klass);
   }
 
-  VALUE store = rb_ivar_get(klass, rb_intern("__rupee__"));
+  VALUE store = rb_ivar_get(klass, rupee_id);
   return (store == Qnil) ? Qnil : rb_ivar_get(store, id);
 }
