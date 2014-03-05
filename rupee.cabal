@@ -1,0 +1,45 @@
+name:                rupee
+version:             0.1.0
+synopsis:            An elegant Ruby VM interface,
+                     useful for embedding and/or writing extensions in.
+license:             MIT
+license-file:        LICENSE
+author:              Charles Strahan
+maintainer:          charles.c.strahan@gmail.com
+copyright:           Copyright (C) 2014 Charles Strahan
+category:            Language
+build-type:          Custom
+cabal-version:       >=1.8
+
+source-repository head
+  type: git
+  location: git://github.com/cstrahan/rupee.git
+
+Flag library-only
+    Default:       False
+
+library
+  exposed-modules:        Foreign.Rupee
+                        , Foreign.Rupee.CAPI
+                        , Foreign.Rupee.Builtins
+  ghc-options:          -Wall
+  extensions:           BangPatterns, OverloadedStrings
+  build-depends:        base >= 4  && < 5
+                        , bytestring
+                        , mtl
+                        , text
+  c-sources:            cbits/shim.c
+  install-includes:     cbits/shim.h
+  include-dirs:         cbits
+
+executable         demo
+    if flag(library-only)
+        Buildable: False
+
+    main-is:           demo.hs
+    hs-source-dirs:    demo
+    build-depends:     base
+                     , text
+                     , mtl
+                     , rupee
+    ghc-options:       -threaded -O2

@@ -1,0 +1,24 @@
+* write functions for:
+ - module/class fetch
+ - class def (alloc, free, etc)
+ - string to/from
+ - number to/from
+ - bool to/from
+ - isTruthy/isFalsey (rtest)
+
+* modify call/defs to take sum type of Block (nothing/val/fun)
+
+* write a Proc creater, which will work by:
+  - creating a new Object,
+  - defining a call method on it,
+  - perform Proc.new(&obj.method(:call))
+* clean up initialization - create dedicated rupee_init HS/C
+
+* export all rb_c* and rb_m* modules/classes, in Foreign.Rupee.Modules
+* export rb_stdin, rb_stdout, rb_stderr; note that these are mutables, and set
+    through $std{out,in,err}
+
+DONE
+----
+* make defMethod functions GCable
+  - need to write some sort of Finalizer class on the c side
