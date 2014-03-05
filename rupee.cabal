@@ -22,6 +22,8 @@ library
   exposed-modules:        Foreign.Rupee
                         , Foreign.Rupee.CAPI
                         , Foreign.Rupee.Builtins
+                        , Foreign.Rupee.Types
+  other-modules:
   ghc-options:          -Wall
   extensions:           BangPatterns, OverloadedStrings
   build-depends:        base >= 4  && < 5

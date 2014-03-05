@@ -6,10 +6,13 @@ import Control.Monad
 import Control.Monad.Trans
 import Foreign.C.Types
 import Foreign.C.String
-import Foreign.Rupee.CAPI
 import Foreign.Marshal
 import Foreign.Storable
 import Data.Text
+
+import Foreign.Rupee.CAPI
+import Foreign.Rupee.Types
+import Foreign.Rupee.Builtins
 
 {- main :: IO () -}
 {- main = -}
@@ -22,29 +25,31 @@ import Data.Text
        {- return () -}
        {- forever $ rbEval "puts '=====> this is ruby!'" -}
 main :: IO ()
-main = main2 `catch`  \(RubyException val) ->
-    do putStrLn "Caught Ruby exception: "
-       msg <- evalRBIO rbNil $ rbCall val "to_s" [] Nothing
-       str <- toString msg
-       putStrLn str
+main =
+    do rupeeInit
+       demo `catch`  \(RubyException val) ->
+           do putStrLn "Caught Ruby exception: "
+              msg <- evalRBIO rbNil $ rbCall val "to_s" [] Nothing
+              str <- toString msg
+              putStrLn str
 
-main2 :: IO ()
-main2 =
-    do ruby_init
-       ruby_init_loadpath
-       register_funptr_free hs_free_fun_ptr
+demo :: IO ()
+demo = do
+    evalRBIO rbNil $
+        do hello <- rbEval "'hello'"
+           world <- rbEval "'world'"
+           string_class <- rbString
+           {- block <- rbEval "Proc.new {|x| puts self.class }" -}
+           block <- mkProc $ \self args blk -> rbCall hello "puts" [self] Nothing
+           {- rbCall block "call" [] Nothing -}
+           rbCall hello "instance_eval" [] (Just block)
+           {- evalRBIO rbNil $ defMethod obj "hello" (\self args Nothing -> -}
+           {- evalRBIO rbNil $ defMethod string_class "hello" (\self [arg1] (Just blk) -> -}
+                    {- rbCall hello "instance_eval" [] (Just blk) -}
+                    {- rbCall blk "call" [] (Just blk) -}
+                    {- rbCall rbTrue "puts" [hello] Nothing -}
+               {- ) -}
+           {- rbCall hello "puts" [string_class] Nothing -}
 
-       hello <- rbEval "'hello'"
-       world <- rbEval "'world'"
-       string_class <- rbEval "String"
-       block <- rbEval "Proc.new {|x| puts self.class }"
-       {- evalRBIO rbNil $ defMethod obj "hello" (\self args Nothing -> -}
-       {- evalRBIO rbNil $ defMethod string_class "hello" (\self [arg1] (Just blk) -> -}
-                {- rbCall hello "instance_eval" [] (Just blk) -}
-                {- rbCall blk "call" [] (Just blk) -}
-                {- rbCall rbTrue "puts" [hello] Nothing -}
-           {- ) -}
-       evalRBIO rbNil $ rbCall hello "puts" [rb_cString] Nothing
-
-       putStrLn "DONE!!!!"
-       return ()
+           liftIO $ putStrLn "DONE!!!!"
+           return ()

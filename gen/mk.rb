@@ -15,7 +15,7 @@ def gen_wrappers(vars)
   vars.each do |var|
     fun_name = clean_name var
     puts "#{fun_name} :: RBIO RValue"
-    puts "#{fun_name} = RBIO $ lift $ peek <$> #{var}"
+    puts "#{fun_name} = RBIO $ lift $ peek #{var}"
     puts ""
   end
 end
@@ -51,7 +51,7 @@ puts "  , rbstdout"
 puts "  , rbstderr"
 puts "  ) where"
 puts ""
-puts "import Foreign.Rupee.CAPI"
+puts "import Foreign.Rupee.Types"
 puts "import Foreign.Ptr"
 puts "import Foreign.Storable"
 puts "import Control.Applicative"
@@ -71,13 +71,13 @@ puts ""
 puts "-- stdin, stdout, stderr"
 puts <<-CODE
 rbstdin :: RBIO RValue
-rbstdin = RBIO $ lift $ peek <$> rb_stdin
+rbstdin = RBIO $ lift $ peek rb_stdin
 
 rbstdout :: RBIO RValue
-rbstdout = RBIO $ lift $ peek <$> rb_stdin
+rbstdout = RBIO $ lift $ peek rb_stdout
 
 rbstderr :: RBIO RValue
-rbstderr = RBIO $ lift $ peek <$> rb_stdin
+rbstderr = RBIO $ lift $ peek rb_stderr
 CODE
 puts""
 puts""

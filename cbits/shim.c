@@ -7,8 +7,13 @@
 /* rb_block_proc(void) */
 /* VALUE rb_define_finalizer(VALUE, VALUE); */
 /* VALUE rb_undefine_finalizer(VALUE); */
+/* rb_str_new(const char *ptr, long len) */
+/* ID rb_intern(const char*); */
+/* ID rb_intern2(const char*, long); */
+/* ID rb_intern_str(VALUE str); */
 
 FunPtrFn freeFunPtrFn = NULL;
+VALUE rupee_proc_constructor = Qnil;
 
 VALUE rupee_new_float(double d) {
 #ifdef RUBY2
@@ -20,8 +25,14 @@ VALUE rupee_new_float(double d) {
 
 void append_pinning_array(obj, array) {
   if (RTEST(array)) { 
-    rb_ary_push(array, result);
+    rb_ary_push(array, obj);
   }
+}
+
+VALUE rupee_rb_sym_to_s(VALUE obj, VALUE pin_array) {
+  VALUE result = rb_sym_to_s(obj);
+  append_pinning_array(obj, pin_array);
+  return result;
 }
 
 VALUE rupee_rb_get_singleton(VALUE obj, VALUE pin_array) {
@@ -30,12 +41,26 @@ VALUE rupee_rb_get_singleton(VALUE obj, VALUE pin_array) {
   return result;
 }
 
+VALUE rupee_eval_string(char* str, int* status, VALUE pin_array) {
+  VALUE result = rb_eval_string_protect(str, status);
+  append_pinning_array(result, pin_array);
+  return result;
+}
+
+VALUE rupee_rb_str_to_symbol(char* str, long len) {
+  return ID2SYM(rb_intern2(str, len));
+}
+
 char rupee_rb_type(VALUE obj) {
   return rb_type(obj);
 }
 
 VALUE rupee_int2num(long x) {
   return INT2NUM(x);
+}
+
+VALUE rupee_double2num(double x) {
+  return DBL2NUM(x);
 }
 
 long rupee_num2long(VALUE v) {
@@ -59,11 +84,20 @@ VALUE rupee_rb_str_len(VALUE str) {
   return RSTRING_LEN(str);
 }
 
-void rupee_register_funptr_free(HsFunPtr ptr) {
+void rupee_init(HsFunPtr ptr) {
   // reference to Haskell's hs_free_fun_ptr
   freeFunPtrFn = ptr;
+
+  // we'll use this to construct procs in Haskell.
+  // we jump through these hoops so we can have access to the correct `self`
+  // if/when invoked via instance_eval.
+  int status;
+  rupee_proc_constructor = rb_eval_string_protect(
+      "Proc.new {|callable| Proc.new {|*args,&blk| callable.call(self, *args, &blk) } }",
+      &status);
 }
 
+// just for debugging...
 void print_object(VALUE obj) {
   obj = rb_funcall2(obj, rb_intern("to_s"), 0, NULL);
   rb_funcall2(rb_mKernel, rb_intern("puts"), 1, &obj);
@@ -71,6 +105,9 @@ void print_object(VALUE obj) {
 
 VALUE rupee_rb_funcall2_protected(struct s_dispatch* dispatch) {
   VALUE result;
+
+  // TODO: check blk;
+  // if not proc, use to_proc if it responds to :to_proc; raise exception otherwise.
   if (RTEST(dispatch->blk)) {
     result = rb_funcall_with_block(
         dispatch->self,
@@ -160,9 +197,7 @@ VALUE rupee_method_data() {
   ID id;
   VALUE klass;
   if (!rb_frame_method_id_and_class(&id, &klass)) {
-    rb_raise(
-        rb_eRuntimeError,
-        "Cannot get method id and class for function");
+    rb_raise(rb_eRuntimeError, "Cannot get method id and class for function");
   }
 
   if (rb_type(klass) == T_ICLASS) {
