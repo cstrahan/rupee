@@ -93,6 +93,7 @@ void rupee_init(HsFunPtr ptr) {
   // we'll use this to construct procs in Haskell.
   // we jump through these hoops so we can have access to the correct `self`
   // if/when invoked via instance_eval.
+  rb_gc_register_address(rupee_proc_constructor);
   int status;
   rupee_proc_constructor = rb_eval_string_protect(
       "Proc.new {|callable| Proc.new {|*args,&blk| callable.call(self, *args, &blk) } }",
@@ -171,6 +172,10 @@ VALUE rupee_haskell_method_invoke(int argc, VALUE *argv, VALUE obj) {
 // creates an object that, when GC'd, will free the attached funptr.
 VALUE create_funptr_finalizer(HsFunPtr ptr) {
   return Data_Wrap_Struct(rb_cObject, NULL, freeFunPtrFn, ptr);
+}
+
+return rupee_wrap_struct(VALUE klass, void (*mark)(), void (*free)(), void *ptr) {
+  return Data_Wrap_Struct(klass, mark, free, ptr);
 }
 
 // a wrapper around rb_define_method

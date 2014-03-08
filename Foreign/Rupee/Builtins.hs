@@ -94,6 +94,7 @@ module Foreign.Rupee.Builtins
 
 import Foreign.Rupee.Types
 import Foreign.Ptr
+import Foreign.ForeignPtr
 import Foreign.Storable
 import Control.Applicative
 import Control.Monad
@@ -101,263 +102,263 @@ import Control.Monad.Trans
 
 
 -- Classes
-rbBasicObject :: RBIO RValue
-rbBasicObject = RBIO $ lift $ peek rb_cBasicObject
+rbBasicObject :: IO (ForeignPtr RValue)
+rbBasicObject = return rb_cBasicObject >>= newForeignPtr_
 
-rbObject :: RBIO RValue
-rbObject = RBIO $ lift $ peek rb_cObject
+rbObject :: IO (ForeignPtr RValue)
+rbObject = return rb_cObject >>= newForeignPtr_
 
-rbArray :: RBIO RValue
-rbArray = RBIO $ lift $ peek rb_cArray
+rbArray :: IO (ForeignPtr RValue)
+rbArray = return rb_cArray >>= newForeignPtr_
 
-rbBignum :: RBIO RValue
-rbBignum = RBIO $ lift $ peek rb_cBignum
+rbBignum :: IO (ForeignPtr RValue)
+rbBignum = return rb_cBignum >>= newForeignPtr_
 
-rbBinding :: RBIO RValue
-rbBinding = RBIO $ lift $ peek rb_cBinding
+rbBinding :: IO (ForeignPtr RValue)
+rbBinding = return rb_cBinding >>= newForeignPtr_
 
-rbClass :: RBIO RValue
-rbClass = RBIO $ lift $ peek rb_cClass
+rbClass :: IO (ForeignPtr RValue)
+rbClass = return rb_cClass >>= newForeignPtr_
 
-rbCont :: RBIO RValue
-rbCont = RBIO $ lift $ peek rb_cCont
+rbCont :: IO (ForeignPtr RValue)
+rbCont = return rb_cCont >>= newForeignPtr_
 
-rbDir :: RBIO RValue
-rbDir = RBIO $ lift $ peek rb_cDir
+rbDir :: IO (ForeignPtr RValue)
+rbDir = return rb_cDir >>= newForeignPtr_
 
-rbData :: RBIO RValue
-rbData = RBIO $ lift $ peek rb_cData
+rbData :: IO (ForeignPtr RValue)
+rbData = return rb_cData >>= newForeignPtr_
 
-rbFalseClass :: RBIO RValue
-rbFalseClass = RBIO $ lift $ peek rb_cFalseClass
+rbFalseClass :: IO (ForeignPtr RValue)
+rbFalseClass = return rb_cFalseClass >>= newForeignPtr_
 
-rbEncoding :: RBIO RValue
-rbEncoding = RBIO $ lift $ peek rb_cEncoding
+rbEncoding :: IO (ForeignPtr RValue)
+rbEncoding = return rb_cEncoding >>= newForeignPtr_
 
-rbEnumerator :: RBIO RValue
-rbEnumerator = RBIO $ lift $ peek rb_cEnumerator
+rbEnumerator :: IO (ForeignPtr RValue)
+rbEnumerator = return rb_cEnumerator >>= newForeignPtr_
 
-rbFile :: RBIO RValue
-rbFile = RBIO $ lift $ peek rb_cFile
+rbFile :: IO (ForeignPtr RValue)
+rbFile = return rb_cFile >>= newForeignPtr_
 
-rbFixnum :: RBIO RValue
-rbFixnum = RBIO $ lift $ peek rb_cFixnum
+rbFixnum :: IO (ForeignPtr RValue)
+rbFixnum = return rb_cFixnum >>= newForeignPtr_
 
-rbFloat :: RBIO RValue
-rbFloat = RBIO $ lift $ peek rb_cFloat
+rbFloat :: IO (ForeignPtr RValue)
+rbFloat = return rb_cFloat >>= newForeignPtr_
 
-rbHash :: RBIO RValue
-rbHash = RBIO $ lift $ peek rb_cHash
+rbHash :: IO (ForeignPtr RValue)
+rbHash = return rb_cHash >>= newForeignPtr_
 
-rbInteger :: RBIO RValue
-rbInteger = RBIO $ lift $ peek rb_cInteger
+rbInteger :: IO (ForeignPtr RValue)
+rbInteger = return rb_cInteger >>= newForeignPtr_
 
-rbIO :: RBIO RValue
-rbIO = RBIO $ lift $ peek rb_cIO
+rbIO :: IO (ForeignPtr RValue)
+rbIO = return rb_cIO >>= newForeignPtr_
 
-rbMatch :: RBIO RValue
-rbMatch = RBIO $ lift $ peek rb_cMatch
+rbMatch :: IO (ForeignPtr RValue)
+rbMatch = return rb_cMatch >>= newForeignPtr_
 
-rbMethod :: RBIO RValue
-rbMethod = RBIO $ lift $ peek rb_cMethod
+rbMethod :: IO (ForeignPtr RValue)
+rbMethod = return rb_cMethod >>= newForeignPtr_
 
-rbModule :: RBIO RValue
-rbModule = RBIO $ lift $ peek rb_cModule
+rbModule :: IO (ForeignPtr RValue)
+rbModule = return rb_cModule >>= newForeignPtr_
 
-rbNameErrorMesg :: RBIO RValue
-rbNameErrorMesg = RBIO $ lift $ peek rb_cNameErrorMesg
+rbNameErrorMesg :: IO (ForeignPtr RValue)
+rbNameErrorMesg = return rb_cNameErrorMesg >>= newForeignPtr_
 
-rbNilClass :: RBIO RValue
-rbNilClass = RBIO $ lift $ peek rb_cNilClass
+rbNilClass :: IO (ForeignPtr RValue)
+rbNilClass = return rb_cNilClass >>= newForeignPtr_
 
-rbNumeric :: RBIO RValue
-rbNumeric = RBIO $ lift $ peek rb_cNumeric
+rbNumeric :: IO (ForeignPtr RValue)
+rbNumeric = return rb_cNumeric >>= newForeignPtr_
 
-rbProc :: RBIO RValue
-rbProc = RBIO $ lift $ peek rb_cProc
+rbProc :: IO (ForeignPtr RValue)
+rbProc = return rb_cProc >>= newForeignPtr_
 
-rbRandom :: RBIO RValue
-rbRandom = RBIO $ lift $ peek rb_cRandom
+rbRandom :: IO (ForeignPtr RValue)
+rbRandom = return rb_cRandom >>= newForeignPtr_
 
-rbRange :: RBIO RValue
-rbRange = RBIO $ lift $ peek rb_cRange
+rbRange :: IO (ForeignPtr RValue)
+rbRange = return rb_cRange >>= newForeignPtr_
 
-rbRational :: RBIO RValue
-rbRational = RBIO $ lift $ peek rb_cRational
+rbRational :: IO (ForeignPtr RValue)
+rbRational = return rb_cRational >>= newForeignPtr_
 
-rbComplex :: RBIO RValue
-rbComplex = RBIO $ lift $ peek rb_cComplex
+rbComplex :: IO (ForeignPtr RValue)
+rbComplex = return rb_cComplex >>= newForeignPtr_
 
-rbRegexp :: RBIO RValue
-rbRegexp = RBIO $ lift $ peek rb_cRegexp
+rbRegexp :: IO (ForeignPtr RValue)
+rbRegexp = return rb_cRegexp >>= newForeignPtr_
 
-rbStat :: RBIO RValue
-rbStat = RBIO $ lift $ peek rb_cStat
+rbStat :: IO (ForeignPtr RValue)
+rbStat = return rb_cStat >>= newForeignPtr_
 
-rbString :: RBIO RValue
-rbString = RBIO $ lift $ peek rb_cString
+rbString :: IO (ForeignPtr RValue)
+rbString = return rb_cString >>= newForeignPtr_
 
-rbStruct :: RBIO RValue
-rbStruct = RBIO $ lift $ peek rb_cStruct
+rbStruct :: IO (ForeignPtr RValue)
+rbStruct = return rb_cStruct >>= newForeignPtr_
 
-rbSymbol :: RBIO RValue
-rbSymbol = RBIO $ lift $ peek rb_cSymbol
+rbSymbol :: IO (ForeignPtr RValue)
+rbSymbol = return rb_cSymbol >>= newForeignPtr_
 
-rbThread :: RBIO RValue
-rbThread = RBIO $ lift $ peek rb_cThread
+rbThread :: IO (ForeignPtr RValue)
+rbThread = return rb_cThread >>= newForeignPtr_
 
-rbTime :: RBIO RValue
-rbTime = RBIO $ lift $ peek rb_cTime
+rbTime :: IO (ForeignPtr RValue)
+rbTime = return rb_cTime >>= newForeignPtr_
 
-rbTrueClass :: RBIO RValue
-rbTrueClass = RBIO $ lift $ peek rb_cTrueClass
+rbTrueClass :: IO (ForeignPtr RValue)
+rbTrueClass = return rb_cTrueClass >>= newForeignPtr_
 
-rbUnboundMethod :: RBIO RValue
-rbUnboundMethod = RBIO $ lift $ peek rb_cUnboundMethod
+rbUnboundMethod :: IO (ForeignPtr RValue)
+rbUnboundMethod = return rb_cUnboundMethod >>= newForeignPtr_
 
 
 -- Modules
-rbKernel :: RBIO RValue
-rbKernel = RBIO $ lift $ peek rb_mKernel
+rbKernel :: IO (ForeignPtr RValue)
+rbKernel = return rb_mKernel >>= newForeignPtr_
 
-rbComparable :: RBIO RValue
-rbComparable = RBIO $ lift $ peek rb_mComparable
+rbComparable :: IO (ForeignPtr RValue)
+rbComparable = return rb_mComparable >>= newForeignPtr_
 
-rbEnumerable :: RBIO RValue
-rbEnumerable = RBIO $ lift $ peek rb_mEnumerable
+rbEnumerable :: IO (ForeignPtr RValue)
+rbEnumerable = return rb_mEnumerable >>= newForeignPtr_
 
-rbErrno :: RBIO RValue
-rbErrno = RBIO $ lift $ peek rb_mErrno
+rbErrno :: IO (ForeignPtr RValue)
+rbErrno = return rb_mErrno >>= newForeignPtr_
 
-rbFileTest :: RBIO RValue
-rbFileTest = RBIO $ lift $ peek rb_mFileTest
+rbFileTest :: IO (ForeignPtr RValue)
+rbFileTest = return rb_mFileTest >>= newForeignPtr_
 
-rbGC :: RBIO RValue
-rbGC = RBIO $ lift $ peek rb_mGC
+rbGC :: IO (ForeignPtr RValue)
+rbGC = return rb_mGC >>= newForeignPtr_
 
-rbMath :: RBIO RValue
-rbMath = RBIO $ lift $ peek rb_mMath
+rbMath :: IO (ForeignPtr RValue)
+rbMath = return rb_mMath >>= newForeignPtr_
 
-rbProcess :: RBIO RValue
-rbProcess = RBIO $ lift $ peek rb_mProcess
+rbProcess :: IO (ForeignPtr RValue)
+rbProcess = return rb_mProcess >>= newForeignPtr_
 
-rbWaitReadable :: RBIO RValue
-rbWaitReadable = RBIO $ lift $ peek rb_mWaitReadable
+rbWaitReadable :: IO (ForeignPtr RValue)
+rbWaitReadable = return rb_mWaitReadable >>= newForeignPtr_
 
-rbWaitWritable :: RBIO RValue
-rbWaitWritable = RBIO $ lift $ peek rb_mWaitWritable
+rbWaitWritable :: IO (ForeignPtr RValue)
+rbWaitWritable = return rb_mWaitWritable >>= newForeignPtr_
 
 
 -- Exceptions
-rbException :: RBIO RValue
-rbException = RBIO $ lift $ peek rb_eException
+rbException :: IO (ForeignPtr RValue)
+rbException = return rb_eException >>= newForeignPtr_
 
-rbStandardError :: RBIO RValue
-rbStandardError = RBIO $ lift $ peek rb_eStandardError
+rbStandardError :: IO (ForeignPtr RValue)
+rbStandardError = return rb_eStandardError >>= newForeignPtr_
 
-rbSystemExit :: RBIO RValue
-rbSystemExit = RBIO $ lift $ peek rb_eSystemExit
+rbSystemExit :: IO (ForeignPtr RValue)
+rbSystemExit = return rb_eSystemExit >>= newForeignPtr_
 
-rbInterrupt :: RBIO RValue
-rbInterrupt = RBIO $ lift $ peek rb_eInterrupt
+rbInterrupt :: IO (ForeignPtr RValue)
+rbInterrupt = return rb_eInterrupt >>= newForeignPtr_
 
-rbSignal :: RBIO RValue
-rbSignal = RBIO $ lift $ peek rb_eSignal
+rbSignal :: IO (ForeignPtr RValue)
+rbSignal = return rb_eSignal >>= newForeignPtr_
 
-rbFatal :: RBIO RValue
-rbFatal = RBIO $ lift $ peek rb_eFatal
+rbFatal :: IO (ForeignPtr RValue)
+rbFatal = return rb_eFatal >>= newForeignPtr_
 
-rbArgError :: RBIO RValue
-rbArgError = RBIO $ lift $ peek rb_eArgError
+rbArgError :: IO (ForeignPtr RValue)
+rbArgError = return rb_eArgError >>= newForeignPtr_
 
-rbEOFError :: RBIO RValue
-rbEOFError = RBIO $ lift $ peek rb_eEOFError
+rbEOFError :: IO (ForeignPtr RValue)
+rbEOFError = return rb_eEOFError >>= newForeignPtr_
 
-rbIndexError :: RBIO RValue
-rbIndexError = RBIO $ lift $ peek rb_eIndexError
+rbIndexError :: IO (ForeignPtr RValue)
+rbIndexError = return rb_eIndexError >>= newForeignPtr_
 
-rbStopIteration :: RBIO RValue
-rbStopIteration = RBIO $ lift $ peek rb_eStopIteration
+rbStopIteration :: IO (ForeignPtr RValue)
+rbStopIteration = return rb_eStopIteration >>= newForeignPtr_
 
-rbKeyError :: RBIO RValue
-rbKeyError = RBIO $ lift $ peek rb_eKeyError
+rbKeyError :: IO (ForeignPtr RValue)
+rbKeyError = return rb_eKeyError >>= newForeignPtr_
 
-rbRangeError :: RBIO RValue
-rbRangeError = RBIO $ lift $ peek rb_eRangeError
+rbRangeError :: IO (ForeignPtr RValue)
+rbRangeError = return rb_eRangeError >>= newForeignPtr_
 
-rbIOError :: RBIO RValue
-rbIOError = RBIO $ lift $ peek rb_eIOError
+rbIOError :: IO (ForeignPtr RValue)
+rbIOError = return rb_eIOError >>= newForeignPtr_
 
-rbRuntimeError :: RBIO RValue
-rbRuntimeError = RBIO $ lift $ peek rb_eRuntimeError
+rbRuntimeError :: IO (ForeignPtr RValue)
+rbRuntimeError = return rb_eRuntimeError >>= newForeignPtr_
 
-rbSecurityError :: RBIO RValue
-rbSecurityError = RBIO $ lift $ peek rb_eSecurityError
+rbSecurityError :: IO (ForeignPtr RValue)
+rbSecurityError = return rb_eSecurityError >>= newForeignPtr_
 
-rbSystemCallError :: RBIO RValue
-rbSystemCallError = RBIO $ lift $ peek rb_eSystemCallError
+rbSystemCallError :: IO (ForeignPtr RValue)
+rbSystemCallError = return rb_eSystemCallError >>= newForeignPtr_
 
-rbThreadError :: RBIO RValue
-rbThreadError = RBIO $ lift $ peek rb_eThreadError
+rbThreadError :: IO (ForeignPtr RValue)
+rbThreadError = return rb_eThreadError >>= newForeignPtr_
 
-rbTypeError :: RBIO RValue
-rbTypeError = RBIO $ lift $ peek rb_eTypeError
+rbTypeError :: IO (ForeignPtr RValue)
+rbTypeError = return rb_eTypeError >>= newForeignPtr_
 
-rbZeroDivError :: RBIO RValue
-rbZeroDivError = RBIO $ lift $ peek rb_eZeroDivError
+rbZeroDivError :: IO (ForeignPtr RValue)
+rbZeroDivError = return rb_eZeroDivError >>= newForeignPtr_
 
-rbNotImpError :: RBIO RValue
-rbNotImpError = RBIO $ lift $ peek rb_eNotImpError
+rbNotImpError :: IO (ForeignPtr RValue)
+rbNotImpError = return rb_eNotImpError >>= newForeignPtr_
 
-rbNoMemError :: RBIO RValue
-rbNoMemError = RBIO $ lift $ peek rb_eNoMemError
+rbNoMemError :: IO (ForeignPtr RValue)
+rbNoMemError = return rb_eNoMemError >>= newForeignPtr_
 
-rbNoMethodError :: RBIO RValue
-rbNoMethodError = RBIO $ lift $ peek rb_eNoMethodError
+rbNoMethodError :: IO (ForeignPtr RValue)
+rbNoMethodError = return rb_eNoMethodError >>= newForeignPtr_
 
-rbFloatDomainError :: RBIO RValue
-rbFloatDomainError = RBIO $ lift $ peek rb_eFloatDomainError
+rbFloatDomainError :: IO (ForeignPtr RValue)
+rbFloatDomainError = return rb_eFloatDomainError >>= newForeignPtr_
 
-rbLocalJumpError :: RBIO RValue
-rbLocalJumpError = RBIO $ lift $ peek rb_eLocalJumpError
+rbLocalJumpError :: IO (ForeignPtr RValue)
+rbLocalJumpError = return rb_eLocalJumpError >>= newForeignPtr_
 
-rbSysStackError :: RBIO RValue
-rbSysStackError = RBIO $ lift $ peek rb_eSysStackError
+rbSysStackError :: IO (ForeignPtr RValue)
+rbSysStackError = return rb_eSysStackError >>= newForeignPtr_
 
-rbRegexpError :: RBIO RValue
-rbRegexpError = RBIO $ lift $ peek rb_eRegexpError
+rbRegexpError :: IO (ForeignPtr RValue)
+rbRegexpError = return rb_eRegexpError >>= newForeignPtr_
 
-rbEncodingError :: RBIO RValue
-rbEncodingError = RBIO $ lift $ peek rb_eEncodingError
+rbEncodingError :: IO (ForeignPtr RValue)
+rbEncodingError = return rb_eEncodingError >>= newForeignPtr_
 
-rbEncCompatError :: RBIO RValue
-rbEncCompatError = RBIO $ lift $ peek rb_eEncCompatError
+rbEncCompatError :: IO (ForeignPtr RValue)
+rbEncCompatError = return rb_eEncCompatError >>= newForeignPtr_
 
-rbScriptError :: RBIO RValue
-rbScriptError = RBIO $ lift $ peek rb_eScriptError
+rbScriptError :: IO (ForeignPtr RValue)
+rbScriptError = return rb_eScriptError >>= newForeignPtr_
 
-rbNameError :: RBIO RValue
-rbNameError = RBIO $ lift $ peek rb_eNameError
+rbNameError :: IO (ForeignPtr RValue)
+rbNameError = return rb_eNameError >>= newForeignPtr_
 
-rbSyntaxError :: RBIO RValue
-rbSyntaxError = RBIO $ lift $ peek rb_eSyntaxError
+rbSyntaxError :: IO (ForeignPtr RValue)
+rbSyntaxError = return rb_eSyntaxError >>= newForeignPtr_
 
-rbLoadError :: RBIO RValue
-rbLoadError = RBIO $ lift $ peek rb_eLoadError
+rbLoadError :: IO (ForeignPtr RValue)
+rbLoadError = return rb_eLoadError >>= newForeignPtr_
 
-rbMathDomainError :: RBIO RValue
-rbMathDomainError = RBIO $ lift $ peek rb_eMathDomainError
+rbMathDomainError :: IO (ForeignPtr RValue)
+rbMathDomainError = return rb_eMathDomainError >>= newForeignPtr_
 
 
 -- stdin, stdout, stderr
-rbstdin :: RBIO RValue
-rbstdin = RBIO $ lift $ peek rb_stdin
+rbstdin :: IO (ForeignPtr RValue)
+rbstdin =  return rb_stdin >>= newForeignPtr_
 
-rbstdout :: RBIO RValue
-rbstdout = RBIO $ lift $ peek rb_stdout
+rbstdout :: IO (ForeignPtr RValue)
+rbstdout =  return rb_stdout >>= newForeignPtr_
 
-rbstderr :: RBIO RValue
-rbstderr = RBIO $ lift $ peek rb_stderr
+rbstderr :: IO (ForeignPtr RValue)
+rbstderr =  return rb_stderr >>= newForeignPtr_
 
 
 -- Foreign decls

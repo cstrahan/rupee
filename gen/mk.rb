@@ -14,8 +14,8 @@ end
 def gen_wrappers(vars)
   vars.each do |var|
     fun_name = clean_name var
-    puts "#{fun_name} :: RBIO RValue"
-    puts "#{fun_name} = RBIO $ lift $ peek #{var}"
+    puts "#{fun_name} :: IO (ForeignPtr RValue)"
+    puts "#{fun_name} = return #{var} >>= newForeignPtr_"
     puts ""
   end
 end
@@ -53,6 +53,7 @@ puts "  ) where"
 puts ""
 puts "import Foreign.Rupee.Types"
 puts "import Foreign.Ptr"
+puts "import Foreign.ForeignPtr"
 puts "import Foreign.Storable"
 puts "import Control.Applicative"
 puts "import Control.Monad"
@@ -70,14 +71,14 @@ gen_wrappers errors
 puts ""
 puts "-- stdin, stdout, stderr"
 puts <<-CODE
-rbstdin :: RBIO RValue
-rbstdin = RBIO $ lift $ peek rb_stdin
+rbstdin :: IO (ForeignPtr RValue)
+rbstdin =  return rb_stdin >>= newForeignPtr_
 
-rbstdout :: RBIO RValue
-rbstdout = RBIO $ lift $ peek rb_stdout
+rbstdout :: IO (ForeignPtr RValue)
+rbstdout =  return rb_stdout >>= newForeignPtr_
 
-rbstderr :: RBIO RValue
-rbstderr = RBIO $ lift $ peek rb_stderr
+rbstderr :: IO (ForeignPtr RValue)
+rbstderr =  return rb_stderr >>= newForeignPtr_
 CODE
 puts""
 puts""

@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Foreign.Rupee.Types where
 
@@ -21,22 +22,20 @@ import Data.Data
 import Data.Maybe
 import Data.Word
 import Data.Typeable
+import GHC.Generics (Generic)
+import Data.Hashable
 
-
-data RubyException = RubyException { rbExceptionObject :: RValue } deriving (Show, Typeable)
+data RubyException = RubyException { rbExceptionObject :: ForeignPtr RValue } deriving (Show, Typeable)
 instance Exception RubyException
 
-newtype RValue = RValue (Ptr RValue) deriving (Eq, Ord, Show, Typeable, Data, Storable)
-newtype RID    = RID (Ptr RID) deriving (Eq, Ord, Show, Typeable, Data, Storable)
+newtype RValue = RValue (Ptr RValue) deriving (Eq, Ord, Show, Typeable, Data, Storable, Generic)
+newtype RID    = RID (Ptr RID) deriving (Eq, Ord, Show, Typeable, Data, Storable, Generic)
 
-newtype RBIO a = RBIO { runRBIO :: StateT RValue IO a }
-                 deriving (Monad, MonadIO)
-
-data Dispatch = Dispatch RValue
-                         RID
-                         CInt
-                         (Ptr RValue)
-                         RValue
+data Dispatch = Dispatch (ForeignPtr RValue)  -- self
+                         RID                  -- method id
+                         CInt                 -- argc
+                         (Ptr RValue)         -- argv
+                         (ForeignPtr RValue)  -- block
 instance Storable Dispatch where
     sizeOf _ = (#size struct s_dispatch)
     alignment = sizeOf
