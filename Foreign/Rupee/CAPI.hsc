@@ -16,7 +16,7 @@ import Foreign.Rupee.Types
 import Control.Applicative
 import Control.Exception
 import Control.Monad
-import Control.Monad.State.Strict
+import Control.Monad.Reader
 import Foreign.C.Types
 import Foreign.C.String
 import Foreign.Marshal
@@ -33,9 +33,9 @@ rbTrue  = RValue $ intPtrToPtr #{const Qtrue}
 rbNil   = RValue $ intPtrToPtr #{const Qnil}
 rbUndef = RValue $ intPtrToPtr #{const Qundef}
 
-rtype :: RValue -> IO RType
+rtype :: RValue -> Ruby RType
 rtype v =
-    do typ <- rb_type v
+    do typ <- lift $ rb_type v
        return $ case typ of
                     #{const RUBY_T_NONE}     -> RNone
                     #{const RUBY_T_OBJECT}   -> RObject
@@ -64,26 +64,40 @@ rtype v =
                     #{const RUBY_T_ZOMBIE}   -> RZombie
                     _                        -> undefined
 
-evalRBIO :: RValue -> RBIO a -> IO a
-evalRBIO ary m = evalStateT (runRBIO m) ary
+
+evalRubyT :: RValue -> RubyT IO a -> IO a
+evalRubyT ary m = runReaderT (runRubyT m) ary
+
+runRuby :: Ruby a -> IO ()
+runRuby m =
+    do initRupee
+       withRegisteredArray (flip evalRubyT (m >> return ()))
+
+withRegisteredArray :: (RValue -> IO a) -> IO a
+withRegisteredArray f =
+    alloca $ \aryptr -> do
+        bracket_
+            (rb_gc_register_address aryptr)
+            (rb_gc_unregister_address aryptr)
+            (peek aryptr >>= f)
 
 -- TODO: use (show $ typeOf ex) to get the exception type, and use custom Ruby
 --       exception (instead of `raise <some-string>`.
 defMethod :: RValue
           -> String
-          -> (RValue -> [RValue] -> Maybe RValue -> RBIO RValue)
-          -> RBIO ()
+          -> (RValue -> [RValue] -> Maybe RValue -> Ruby RValue)
+          -> Ruby ()
 defMethod klass methodName fun =
-    liftIO $ withCString methodName $ \cname ->
+    RubyT $ lift $ withCString methodName $ \cname ->
         do callback <- (mkCallback $ \argc argv self exc pinArray proc ->
                 do args <- peekArray (fromIntegral argc) argv
                    let mproc = if (proc == rbNil) then Nothing else Just proc
-                   res <- evalRBIO pinArray (fun self args mproc)
+                   res <- evalRubyT pinArray (fun self args mproc)
                                 `catches` [Handler (\ (RubyException exceptionVal) ->
                                                 do poke exc exceptionVal
                                                    return rbNil),
                                            Handler (\ (SomeException ex) ->
-                                                do msg <- evalRBIO pinArray $ toRubyString (show ex)
+                                                do msg <- evalRubyT pinArray $ toRubyString (show ex)
                                                    poke exc msg
                                                    return rbNil)]
                    return res)
@@ -91,43 +105,43 @@ defMethod klass methodName fun =
 
 defSingleton :: RValue
              -> String
-             -> (RValue -> [RValue] -> Maybe RValue -> RBIO RValue)
-             -> RBIO ()
+             -> (RValue -> [RValue] -> Maybe RValue -> Ruby RValue)
+             -> Ruby ()
 defSingleton obj methodName fun =
     do singleton <- getSingleton obj
        defMethod singleton methodName fun
 
-mkProc :: (RValue -> [RValue] -> Maybe RValue -> RBIO RValue)
-       -> RBIO RValue
+mkProc :: (RValue -> [RValue] -> Maybe RValue -> Ruby RValue)
+       -> Ruby RValue
 mkProc fun =
     do objectKlass <- rbObject
        procKlass <- rbProc
-       constructor <- liftIO $ peek rupee_proc_constructor
+       constructor <- lift $ peek rupee_proc_constructor
        callable <- rbCall objectKlass "new" [] Nothing
        defSingleton callable "call" $ \_ (self:args) blk -> fun self args blk
        rbCall constructor "call" [callable] Nothing
 
-getSingleton :: RValue -> RBIO RValue
+getSingleton :: RValue -> Ruby RValue
 getSingleton obj = 
-    RBIO $ do
-        pinningArray <- get
+    RubyT $ do
+        pinningArray <- ask
         lift $ rb_get_singleton obj pinningArray
 
-toSymbol :: String -> RBIO RValue
+toSymbol :: String -> Ruby RValue
 toSymbol str =
-    RBIO $ lift $ withCString str $ \cstr -> rb_str_to_symbol cstr (fromIntegral $ length str)
+    lift $ withCString str $ \cstr -> rb_str_to_symbol cstr (fromIntegral $ length str)
 
-rbIntern :: String -> RBIO RID
-rbIntern str = RBIO $ lift $ withCString str rb_intern 
+rbIntern :: String -> Ruby RID
+rbIntern str = lift $ withCString str rb_intern 
 
 rbCall :: RValue
        -> String
        -> [RValue]
        -> Maybe RValue
-       -> RBIO RValue
+       -> Ruby RValue
 rbCall obj method argv mblk =
-    RBIO $ do
-        pinningArray <- get
+    RubyT $ do
+        pinningArray <- ask
         lift $ withArray argv $ \ary -> do
             mid <- withCString method rb_intern 
             let blk = if isJust mblk then fromJust mblk else rbNil
@@ -140,24 +154,25 @@ rbCall obj method argv mblk =
                         throw $ RubyException exception
                     return result
 
-toRubyString :: String -> RBIO RValue
+toRubyString :: String -> Ruby RValue
 toRubyString str =
-    RBIO $ lift $ withCString str $ \cstr ->
+    lift $ withCString str $ \cstr ->
         rb_str_new2 cstr
 
-toString :: RValue -> IO String
+toString :: RValue -> Ruby String
 toString obj =
     do t <- rtype obj
        if t == RString
-         then do cstr <- rb2cstr obj
-                 len  <- rb_str_len obj
-                 peekCStringLen (cstr, fromIntegral len)
-         else error "Object was not a string"
+         then lift $ do
+             cstr <- rb2cstr obj
+             len  <- rb_str_len obj
+             peekCStringLen (cstr, fromIntegral len)
+         else lift $ error "Object was not a string"
 
-rbEval :: String -> RBIO RValue
+rbEval :: String -> Ruby RValue
 rbEval src =
-    RBIO $ do
-        pinningArray <- get
+    RubyT $ do
+        pinningArray <- ask
         (val, state) <- lift $ alloca $ \state ->
             withCString src $ \cstr -> do
                 (,) <$> rupee_eval_string cstr state pinningArray <*> peek state
@@ -166,8 +181,8 @@ rbEval src =
             throw $ RubyException exception
         return val
 
-rupeeInit :: IO ()
-rupeeInit =
+initRupee :: IO ()
+initRupee =
     do ruby_init
        ruby_init_loadpath
        rupee_init hs_free_fun_ptr
@@ -211,4 +226,3 @@ foreign import ccall safe "&hs_free_fun_ptr"               hs_free_fun_ptr      
 {- void rb_include_module(VALUE,VALUE); -}
 {- void rb_extend_object(VALUE,VALUE); -}
 {- void rb_prepend_module(VALUE,VALUE); -}
-

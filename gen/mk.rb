@@ -14,8 +14,8 @@ end
 def gen_wrappers(vars)
   vars.each do |var|
     fun_name = clean_name var
-    puts "#{fun_name} :: RBIO RValue"
-    puts "#{fun_name} = RBIO $ lift $ peek #{var}"
+    puts "#{fun_name} :: Ruby RValue"
+    puts "#{fun_name} = lift $ peek #{var}"
     puts ""
   end
 end
@@ -37,15 +37,18 @@ end
 
 puts "{-# LANGUAGE ForeignFunctionInterface #-}"
 puts ""
+puts "-- THIS IS A GENERATED FILE"
+puts "--"
+puts "-- DO NOT EDIT!"
+puts ""
 puts "module Foreign.Rupee.Builtins"
-puts "  ("
-puts "  -- * Classes"
+puts "  ( -- * Classes"
 classes.map {|x| clean_name x}.each {|x| puts "  , #{x}"}
-puts "  -- * Modules"
+puts "    -- * Modules"
 modules.map {|x| clean_name x}.each {|x| puts "  , #{x}"}
-puts "  -- * Exceptions"
+puts "    -- * Exceptions"
 errors.map {|x| clean_name x}.each {|x| puts "  , #{x}"}
-puts "  -- * stdin, stdout, stderr"
+puts "    -- * stdin, stdout, stderr"
 puts "  , rbstdin"
 puts "  , rbstdout"
 puts "  , rbstderr"
@@ -70,14 +73,14 @@ gen_wrappers errors
 puts ""
 puts "-- stdin, stdout, stderr"
 puts <<-CODE
-rbstdin :: RBIO RValue
-rbstdin = RBIO $ lift $ peek rb_stdin
+rbstdin :: Ruby RValue
+rbstdin = lift $ peek rb_stdin
 
-rbstdout :: RBIO RValue
-rbstdout = RBIO $ lift $ peek rb_stdout
+rbstdout :: Ruby RValue
+rbstdout = lift $ peek rb_stdout
 
-rbstderr :: RBIO RValue
-rbstderr = RBIO $ lift $ peek rb_stderr
+rbstderr :: Ruby RValue
+rbstderr = lift $ peek rb_stderr
 CODE
 puts""
 puts""

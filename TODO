@@ -18,6 +18,10 @@
 * export rb_stdin, rb_stdout, rb_stderr; note that these are mutables, and set
     through $std{out,in,err}
 
+* when initializing C lib, create proc constructor object, which,
+  when passed a 
+  
+
 DONE
 ----
 * make defMethod functions GCable

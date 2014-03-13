@@ -97,6 +97,7 @@ void rupee_init(HsFunPtr ptr) {
   rupee_proc_constructor = rb_eval_string_protect(
       "Proc.new {|callable| Proc.new {|*args,&blk| callable.call(self, *args, &blk) } }",
       &status);
+  rb_global_variable(&rupee_proc_constructor);
 
   rupee_id    = rb_intern("__rupee__");
   rupee_gc_id = rb_intern("__rupee__gc");

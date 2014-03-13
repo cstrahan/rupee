@@ -1,7 +1,7 @@
 name:                rupee
 version:             0.1.0
 synopsis:            An elegant Ruby VM interface,
-                     useful for embedding and/or writing extensions in.
+                     useful for embedding Ruby and/or writing extensions in.
 license:             MIT
 license-file:        LICENSE
 author:              Charles Strahan
@@ -30,6 +30,8 @@ library
                         , bytestring
                         , mtl
                         , text
+                        , monad-control
+                        , transformers-base
   c-sources:            cbits/shim.c
   install-includes:     cbits/shim.h
   include-dirs:         cbits
@@ -44,4 +46,5 @@ executable         demo
                      , text
                      , mtl
                      , rupee
+                     , lifted-base
     ghc-options:       -threaded -O2

@@ -2,6 +2,10 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Foreign.Rupee.Types where
 
@@ -11,7 +15,10 @@ module Foreign.Rupee.Types where
 import Control.Applicative
 import Control.Exception
 import Control.Monad
-import Control.Monad.State.Strict
+import Control.Monad.Reader
+import Control.Monad.Base
+import Control.Monad.Trans
+import Control.Monad.Trans.Control
 import Foreign.C.Types
 import Foreign.C.String
 import Foreign.Marshal
@@ -22,21 +29,40 @@ import Data.Maybe
 import Data.Word
 import Data.Typeable
 
-
 data RubyException = RubyException { rbExceptionObject :: RValue } deriving (Show, Typeable)
 instance Exception RubyException
+
 
 newtype RValue = RValue (Ptr RValue) deriving (Eq, Ord, Show, Typeable, Data, Storable)
 newtype RID    = RID (Ptr RID) deriving (Eq, Ord, Show, Typeable, Data, Storable)
 
-newtype RBIO a = RBIO { runRBIO :: StateT RValue IO a }
-                 deriving (Monad, MonadIO)
+newtype RubyT m a = RubyT { runRubyT :: ReaderT RValue m a }
+                    deriving (Functor, Applicative, Monad, MonadTrans, MonadIO)
+type Ruby a = RubyT IO a
+
+instance MonadBase b m => MonadBase b (RubyT m) where
+    liftBase = lift . liftBase
+
+instance MonadTransControl RubyT where
+    newtype StT RubyT a = StRuby {unStRuby :: StT (ReaderT RValue) a}
+    liftWith = defaultLiftWith RubyT runRubyT StRuby
+    restoreT = defaultRestoreT RubyT unStRuby
+    {-# INLINE liftWith #-}
+    {-# INLINE restoreT #-}
+
+instance MonadBaseControl b m => MonadBaseControl b (RubyT m) where
+    newtype StM (RubyT m) a = StMRuby {unStMRuby :: ComposeSt RubyT m a}
+    liftBaseWith = defaultLiftBaseWith StMRuby
+    restoreM     = defaultRestoreM unStMRuby
+    {-# INLINE liftBaseWith #-}
+    {-# INLINE restoreM #-}
 
 data Dispatch = Dispatch RValue
                          RID
                          CInt
                          (Ptr RValue)
                          RValue
+
 instance Storable Dispatch where
     sizeOf _ = (#size struct s_dispatch)
     alignment = sizeOf
