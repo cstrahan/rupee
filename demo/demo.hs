@@ -23,8 +23,7 @@ main =
 
 demo :: Ruby ()
 demo =
-    do kernel <- rbKernel
-       ints <- rbEval "[1,2,3,4,5]"
+    do ints <- rbEval "[1,2,3,4,5]"
        proc <- mkProc $ \self (x:_) blk -> do puts [x]
        rbCall ints "each" [] (Just proc)
        liftIO $ putStrLn "DONE!!!!"

@@ -64,7 +64,6 @@ rtype v =
                     #{const RUBY_T_ZOMBIE}   -> RZombie
                     _                        -> undefined
 
-
 evalRubyT :: RValue -> RubyT IO a -> IO a
 evalRubyT ary m = runReaderT (runRubyT m) ary
 
@@ -103,6 +102,16 @@ defMethod klass methodName fun =
                    return res)
            rb_define_method klass cname callback
 
+defMethodWithSuper :: RValue
+                   -> String
+                   -> (RValue -> Maybe ([RValue] -> Maybe RValue -> Ruby RValue) -> [RValue] -> Maybe RValue -> Ruby RValue)
+                   -> Ruby ()
+defMethodWithSuper klass methodName fun =
+    do name <- toRubyString methodName
+       def <- mkProcWithSuper fun
+       rbCall klass "define_method" [name] (Just def)
+       return ()
+
 defSingleton :: RValue
              -> String
              -> (RValue -> [RValue] -> Maybe RValue -> Ruby RValue)
@@ -115,10 +124,22 @@ mkProc :: (RValue -> [RValue] -> Maybe RValue -> Ruby RValue)
        -> Ruby RValue
 mkProc fun =
     do objectKlass <- rbObject
-       procKlass <- rbProc
        constructor <- lift $ peek rupee_proc_constructor
        callable <- rbCall objectKlass "new" [] Nothing
        defSingleton callable "call" $ \_ (self:args) blk -> fun self args blk
+       rbCall constructor "call" [callable] Nothing
+
+mkProcWithSuper :: (RValue -> Maybe ([RValue] -> Maybe RValue -> Ruby RValue) -> [RValue] -> Maybe RValue -> Ruby RValue)
+                -> Ruby RValue
+mkProcWithSuper fun =
+    do objectKlass <- rbObject
+       constructor <- lift $ peek rupee_proc_constructor_with_super
+       callable <- rbCall objectKlass "new" [] Nothing
+       defSingleton callable "call" $ \_ (self:superProc:args) blk ->
+           do let super = if superProc == rbNil
+                            then Nothing
+                            else Just $ \sargs sblk -> rbCall superProc "call" sargs sblk
+              fun self super args blk
        rbCall constructor "call" [callable] Nothing
 
 getSingleton :: RValue -> Ruby RValue
@@ -187,33 +208,38 @@ initRupee =
        ruby_init_loadpath
        rupee_init hs_free_fun_ptr
 
-foreign import ccall safe "ruby_init"                      ruby_init                       :: IO ()
-foreign import ccall safe "ruby_finalize"                  ruby_finalize                   :: IO ()
-foreign import ccall safe "ruby_init_loadpath"             ruby_init_loadpath              :: IO ()
-foreign import ccall safe "rupee_eval_string"              rupee_eval_string               :: CString -> Ptr CInt -> RValue -> IO RValue
-foreign import ccall safe "rb_protect"                     rb_protect                      :: FunPtr (RValue -> RValue) -> RValue -> Ptr CInt -> IO RValue
-foreign import ccall safe "rb_intern"                      rb_intern                       :: CString -> IO RID
-foreign import ccall safe "rb_gc_register_mark_object"     rb_gc_register_mark_object      :: RValue -> IO ()
-foreign import ccall safe "rb_gc_register_address"         rb_gc_register_address          :: Ptr RValue -> IO ()
-foreign import ccall safe "rb_gc_unregister_address"       rb_gc_unregister_address        :: Ptr RValue -> IO ()
-foreign import ccall safe "rb_errinfo"                     rb_errinfo                      :: IO RValue
-foreign import ccall safe "intern.h rb_ary_entry"          rb_ary_entry                    :: RValue -> CLong -> IO RValue
-foreign import ccall safe "rupee_rb_ary_len"               rb_ary_len                      :: RValue -> IO CUInt
-foreign import ccall safe "rupee_rb2cstr"                  rb2cstr                         :: RValue -> IO CString
-foreign import ccall safe "rupee_funcall"                  rupee_funcall                   :: Ptr Dispatch -> Ptr CInt -> RValue -> IO RValue
-foreign import ccall safe "rupee_rb_type"                  rb_type                         :: RValue -> IO CChar
-foreign import ccall safe "rupee_rb_str_len"               rb_str_len                      :: RValue -> IO CLong
-foreign import ccall safe "rb_str_new"                     rb_str_new                      :: CString -> CLong -> IO RValue
-foreign import ccall safe "rb_str_new2"                    rb_str_new2                     :: CString -> IO RValue
-foreign import ccall safe "rupee_define_method"            rb_define_method                :: RValue -> CString -> FunPtr (HSCallback) -> IO ()
-foreign import ccall safe "rupee_rb_get_singleton"         rb_get_singleton                :: RValue -> RValue -> IO RValue
-foreign import ccall safe "rupee_init"                     rupee_init                      :: (FunPtr (FunPtr a -> IO ())) -> IO ()
-foreign import ccall safe "rupee_rb_str_to_symbol"         rb_str_to_symbol                :: CString -> CLong -> IO RValue
+foreign import ccall safe "ruby_init"                             ruby_init                           :: IO ()
+foreign import ccall safe "ruby_finalize"                         ruby_finalize                       :: IO ()
+foreign import ccall safe "ruby_init_loadpath"                    ruby_init_loadpath                  :: IO ()
+foreign import ccall safe "rupee_eval_string"                     rupee_eval_string                   :: CString -> Ptr CInt -> RValue -> IO RValue
+foreign import ccall safe "rb_protect"                            rb_protect                          :: FunPtr (RValue -> RValue) -> RValue -> Ptr CInt -> IO RValue
+foreign import ccall safe "rb_intern"                             rb_intern                           :: CString -> IO RID
+foreign import ccall safe "rb_gc_register_mark_object"            rb_gc_register_mark_object          :: RValue -> IO ()
+foreign import ccall safe "rb_gc_register_address"                rb_gc_register_address              :: Ptr RValue -> IO ()
+foreign import ccall safe "rb_gc_unregister_address"              rb_gc_unregister_address            :: Ptr RValue -> IO ()
+foreign import ccall safe "rb_errinfo"                            rb_errinfo                          :: IO RValue
+foreign import ccall safe "intern.h rb_ary_entry"                 rb_ary_entry                        :: RValue -> CLong -> IO RValue
+foreign import ccall safe "rupee_rb_ary_len"                      rb_ary_len                          :: RValue -> IO CUInt
+foreign import ccall safe "rb_ary_new"                            rb_ary_new                          :: IO RValue
+foreign import ccall safe "rupee_rb2cstr"                         rb2cstr                             :: RValue -> IO CString
+foreign import ccall safe "rupee_funcall"                         rupee_funcall                       :: Ptr Dispatch -> Ptr CInt -> RValue -> IO RValue
+foreign import ccall safe "rupee_rb_type"                         rb_type                             :: RValue -> IO CChar
+foreign import ccall safe "rupee_rb_str_len"                      rb_str_len                          :: RValue -> IO CLong
+foreign import ccall safe "rb_str_new"                            rb_str_new                          :: CString -> CLong -> IO RValue
+foreign import ccall safe "rb_str_new2"                           rb_str_new2                         :: CString -> IO RValue
+foreign import ccall safe "rupee_define_method"                   rb_define_method                    :: RValue -> CString -> FunPtr (HSCallback) -> IO ()
+foreign import ccall safe "rupee_rb_get_singleton"                rb_get_singleton                    :: RValue -> RValue -> IO RValue
+foreign import ccall safe "rupee_init"                            rupee_init                          :: (FunPtr (FunPtr a -> IO ())) -> IO ()
+foreign import ccall safe "rupee_rb_str_to_symbol"                rb_str_to_symbol                    :: CString -> CLong -> IO RValue
+foreign import ccall safe "rb_define_class_under"                 rb_define_class_under               :: RValue -> CString -> RValue -> IO RValue -- outer, name, super
+foreign import ccall safe "rb_define_alloc_func"                  rb_define_alloc_func                :: RValue -> FunPtr (RValue -> IO RValue) -> IO ()
+foreign import ccall safe "rb_data_object_alloc"                  rb_data_object_alloc                :: RValue -> Ptr () -> FunPtr (Ptr () -> IO ()) -> FunPtr (Ptr () -> IO ()) -> IO RValue -- klass, sval, mark, free
 
-foreign import ccall safe "wrapper"                        mkCallback                      :: (HSCallback) -> IO (FunPtr (HSCallback))
+foreign import ccall safe "wrapper"                               mkCallback                          :: (HSCallback) -> IO (FunPtr (HSCallback))
 
-foreign import ccall safe "&rupee_proc_constructor"        rupee_proc_constructor          :: Ptr RValue
-foreign import ccall safe "&hs_free_fun_ptr"               hs_free_fun_ptr                 :: FunPtr (FunPtr a -> IO ())
+foreign import ccall safe "&rupee_proc_constructor"               rupee_proc_constructor              :: Ptr RValue
+foreign import ccall safe "&rupee_proc_constructor_with_super"    rupee_proc_constructor_with_super   :: Ptr RValue
+foreign import ccall safe "&hs_free_fun_ptr"                      hs_free_fun_ptr                     :: FunPtr (FunPtr a -> IO ())
 
 {- VALUE rb_define_class(const char*,VALUE); -}
 {- VALUE rb_define_module(const char*); -}

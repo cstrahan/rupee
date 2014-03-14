@@ -14,6 +14,7 @@
 
 FunPtrFn freeFunPtrFn = NULL;
 VALUE rupee_proc_constructor = Qnil;
+VALUE rupee_proc_constructor_with_super = Qnil;
 ID rupee_id = NULL;
 ID rupee_gc_id = NULL;
 
@@ -93,11 +94,31 @@ void rupee_init(HsFunPtr ptr) {
   // we'll use this to construct procs in Haskell.
   // we jump through these hoops so we can have access to the correct `self`
   // if/when invoked via instance_eval.
+  //
+  // rb_proc_new doesn't provide a way to get at self (ditto for the passed block and `super`, IIUC)
   int status;
   rupee_proc_constructor = rb_eval_string_protect(
-      "Proc.new {|callable| Proc.new {|*args,&blk| callable.call(self, *args, &blk) } }",
+      "Proc.new {|callable|\n"
+      "  Proc.new {|*args,&blk|\n"
+      "    callable.call(self, *args, &blk)\n"
+      "  }\n"
+      "}",
       &status);
   rb_global_variable(&rupee_proc_constructor);
+
+  rupee_proc_constructor_with_super = rb_eval_string_protect(
+      "Proc.new {|callable|\n"
+      "  su = if defined?(super)\n"
+      "         Proc.new {|*args,&blk| super(*args,&blk) }\n"
+      "       else\n"
+      "         nil\n"
+      "       end\n"
+      "  Proc.new {|*args,&blk|\n"
+      "    callable.call(self, su, *args, &blk)\n"
+      "  }\n"
+      "}",
+      &status);
+  rb_global_variable(&rupee_proc_constructor_with_super);
 
   rupee_id    = rb_intern("__rupee__");
   rupee_gc_id = rb_intern("__rupee__gc");
